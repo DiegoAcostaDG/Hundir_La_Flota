@@ -1,40 +1,33 @@
 package Hundir_La_Flota;
 
 public class Barcos {
-    // Atributos de la clase Barcos
-    private int tamanio;
-    private int[][] coordenadas; // Modificado para ser bidimensional
-    private boolean hundido;
+    public enum TipoBarco {
+        PORTAAVIONES(4), ACORAZADO(3), DESTRUCTOR(2), SUBMARINO(2);
 
-    // Constructor de la clase Barcos
-    public Barcos(int tamanio, int[][] coordenadas) {
-        this.tamanio = tamanio;
-        this.coordenadas = coordenadas;
-        this.hundido = false;
+        private final int tamanio;
+
+        TipoBarco(int tamanio) {
+            this.tamanio = tamanio;
+        }
+
+        public int getTamanio() {
+            return tamanio;
+        }
     }
 
-    // Getters y Setters
+    private TipoBarco tipo;
+
+    public Barcos(TipoBarco tipo) {
+        this.tipo = tipo;
+    }
+
+    public TipoBarco getTipo() {
+        return tipo;
+    }
+
     public int getTamanio() {
-        return tamanio;
-    }
-
-    public void setTamanio(int tamanio) {
-        this.tamanio = tamanio;
-    }
-
-    public int[][] getCoordenadas() {
-        return coordenadas;
-    }
-
-    public void setCoordenadas(int[][] coordenadas) {
-        this.coordenadas = coordenadas;
-    }
-
-    public boolean isHundido() {
-        return hundido;
-    }
-
-    public void setHundido(boolean hundido) {
-        this.hundido = hundido;
+        return tipo.getTamanio();
     }
 }
+
+

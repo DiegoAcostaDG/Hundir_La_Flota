@@ -1,14 +1,29 @@
 package Hundir_La_Flota;
 
-import java.util.ArrayList;
 import java.util.InputMismatchException;
-import java.util.List;
 import java.util.Scanner;
-import Hundir_La_Flota.Barcos.TipoBarco;
 
 public class HundirLaFlota {
-	
-  //Método q  ue muestra el título del juego
+    private Tablero jugadorTablero; // Tablero del jugador, donde colocará sus barcos
+    private Tablero pirataTablero; // Tablero del enemigo, donde el jugador atacará
+    private String nombreJugador; // Nombre del jugador
+    private static final Barcos.TipoBarco[] TIPOS_BARCOS = {
+        Barcos.TipoBarco.PORTAAVIONES, 
+        Barcos.TipoBarco.ACORAZADO, 
+        Barcos.TipoBarco.DESTRUCTOR, 
+        Barcos.TipoBarco.SUBMARINO
+    };
+    private int rondas; // Contador de rondas, incrementado cada vez que el jugador dispara
+
+    // Constructor del juego, inicializa los tableros y el nombre del jugador
+    public HundirLaFlota(String nombreJugador) {
+        this.nombreJugador = nombreJugador;
+        this.jugadorTablero = new Tablero(); // Inicializa el tablero del jugador
+        this.pirataTablero = new Tablero(); // Inicializa el tablero del enemigo
+        this.rondas = 0; // Inicializa el contador de rondas
+    }
+
+    // Método para mostrar el título del juego con gráficos
     private static void mostrarTitulo() {
         System.out.println("*******************************************");
         System.out.println("*            Hundir La Flota              *");
@@ -21,374 +36,152 @@ public class HundirLaFlota {
                 + "▀███████████████████──\r\n"
                 + "░██████████████████▀░░");
     }
-    //Main del juego 
-    public static void main(String[] args) {  
-    	//Inicializar el título , el tablero del jugador y el pirata con su propio tablero.
-        mostrarTitulo();
+
+    // Método para mostrar las instrucciones del juego al jugador
+    public void mostrarInstrucciones() {
+        System.out.println("\n¡Bienvenido a Hundir la Flota!");
+        System.out.println("Instrucciones:");
+        System.out.println("1. El juego se juega en un tablero de 5x5.");
+        System.out.println("2. El jugador debe colocar sus barcos en el tablero.");
+        System.out.println("   - Los barcos se colocan de manera horizontal o vertical.");
+        System.out.println("   - Los barcos ocupan varias casillas dependiendo de su tamaño.");
+        System.out.println("3. Después de colocar todos los barcos, el jugador puede disparar.");
+        System.out.println("   - El jugador debe elegir las coordenadas del disparo.");
+        System.out.println("   - Si el disparo impacta un barco enemigo, se marca como un éxito.");
+        System.out.println("   - Si el disparo falla, se marca como 'agua'.");
+        System.out.println("4. El objetivo es hundir todos los barcos enemigos.");
+        System.out.println();
+    }
+
+    // Método para iniciar el juego, que organiza las fases del juego
+    public void iniciarJuego() {
         Scanner scanner = new Scanner(System.in);
+        mostrarInstrucciones(); // Muestra las instrucciones al inicio
 
-        // Solicitar el nombre del jugador 
-        System.out.print("\nIntroduce tu nombre: "); 
-        String nombreJugador = scanner.nextLine();
-        Tablero tableroJugador = new Tablero();
-        Jugador jugador = new Jugador(nombreJugador, tableroJugador);
-        Pirata pirata = new Pirata(new Tablero()); 
+        // Fase de colocación de barcos
+        System.out.println("\n--- Fase de colocación de barcos ---");
+        for (int i = 0; i < TIPOS_BARCOS.length; i++) {
+            boolean colocado = false;
+            while (!colocado) {
+                System.out.println("\nColocando barco: " + TIPOS_BARCOS[i] + " (tamaño: " + TIPOS_BARCOS[i].getTamanio() + ")");
+                jugadorTablero.mostrarTablero(); // Mostrar tablero actual con barcos colocados
+                int fila = pedirEntero(scanner, "Introduce la fila inicial (0-4): ", 0, 4); // Solicita fila
+                int columna = pedirEntero(scanner, "Introduce la columna inicial (0-4): ", 0, 4); // Solicita columna
+                char direccion = pedirDireccion(scanner); // Solicita dirección del barco
 
-        // Menú para introducir barcos
-        introducirBarcosMenu(tableroJugador, scanner);
+                // Crear el barco y intentar colocarlo en el tablero
+                Barcos barco = new Barcos(TIPOS_BARCOS[i]);
+                colocado = jugadorTablero.colocarBarco(barco, fila, columna, direccion);
 
-        // Iniciar la partida
-        iniciarPartida(jugador, pirata, scanner);
-
-        scanner.close();
-    }
-
-    private static void introducirBarcosMenu(Tablero tablero, Scanner scanner) {
-        List<TipoBarco> barcosDisponibles = new ArrayList<>();
-        for (TipoBarco tipo : TipoBarco.values()) {
-            barcosDisponibles.add(tipo);
-        }
-
-        boolean todosBarcosColocados = false;
-
-        while (!todosBarcosColocados) {
-            System.out.println("\nMenú de Introducción de Barcos:");
-            System.out.println("1. Introducir un barco");
-            System.out.println("2. Ver tablero con los barcos colocados");
-
-            int opcion = leerOpcion(scanner, 2);
-            switch (opcion) {
-                case 1:
-                    introducirBarco(tablero, scanner, barcosDisponibles);
-                    if (barcosDisponibles.isEmpty()) {
-                        todosBarcosColocados = true;
-                    }
-                    break;
-                case 2:
-                    tablero.mostrarTablero();
-                    break;
-                default:
-                    System.out.println("Opción inválida. Intente nuevamente.");
-            }
-        }
-    }
-
-    private static void introducirBarco(Tablero tablero, Scanner scanner, List<TipoBarco> barcosDisponibles) {
-        if (barcosDisponibles.isEmpty()) {
-            System.out.println("¡Ya has colocado todos los barcos!");
-            return;
-        }
-
-        System.out.println("Selecciona el tipo de barco para introducir:");
-        for (int i = 0; i < barcosDisponibles.size(); i++) {
-            System.out.println((i + 1) + ". " + barcosDisponibles.get(i).name());
-        }
-
-        int seleccion = leerOpcion(scanner, barcosDisponibles.size());
-        TipoBarco tipoSeleccionado = barcosDisponibles.get(seleccion - 1);
-
-        boolean colocado = false;
-        while (!colocado) {
-            try {
-                System.out.println("Introduce los datos para colocar un " + tipoSeleccionado.name() + " de tamaño " + tipoSeleccionado.getTamanio() + ":");
-                System.out.print("Fila inicial: ");
-                int filaInicial = scanner.nextInt();
-                System.out.print("Columna inicial: ");
-                int colInicial = scanner.nextInt();
-                System.out.print("Dirección (H para horizontal, V para vertical): ");
-                char direccion = Character.toUpperCase(scanner.next().charAt(0));
-                Barcos barco = new Barcos(tipoSeleccionado);
-                if (tablero.colocarBarco(barco, filaInicial, colInicial, direccion)) {
-                    System.out.println(tipoSeleccionado.name() + " colocado correctamente.");
-                    barcosDisponibles.remove(tipoSeleccionado); // Elimina el barco colocado de la lista
-                    colocado = true;
+                // Verificar si el barco se ha colocado correctamente
+                if (colocado) {
+                    System.out.println("Barco colocado correctamente.");
                 } else {
-                    System.out.println("Error al colocar el " + tipoSeleccionado.name() + ". Selecciona otra ubicación.");
-                    return; // Volver al menú principal si no se puede colocar el barco
+                    System.out.println("No se pudo colocar el barco. Verifica las coordenadas e intenta de nuevo.");
                 }
-            } catch (InputMismatchException e) {
-                System.out.println("Entrada no válida. Inténtalo de nuevo.");
-                scanner.next(); // Limpiar el escáner
-                return; // Volver al menú principal en caso de entrada no válida
             }
         }
-    }
+        // Menú principal del juego después de la colocación de los barcos
+        boolean jugando = true;
+        while (jugando) {
+            System.out.println("\n--- Menú Principal ---");
+            System.out.println("Ronda: " + rondas); // Muestra el número de la ronda actual
+            System.out.println("1. Ver mi tablero");
+            System.out.println("2. Tablero de ataque");
+            System.out.println("3. Disparar");
+            System.out.println("4. Salir");
+            int opcion = pedirEntero(scanner, "Selecciona una opción: ", 1, 4);
 
-    private static void iniciarPartida(Jugador tableroJugador, Pirata pirata, Scanner scanner) {
-        int turno = 1;
-        boolean juegoActivo = true;
-
-        while (juegoActivo) {
-            System.out.println("\nRonda: " + turno);
-            System.out.println("1. Ver mis disparos y mis barcos");
-            System.out.println("2. Ver tablero de ataque");
-            System.out.println("3. Realizar un disparo");
-
-            int opcion = leerOpcion(scanner, 3);
+            // Lógica del menú de opciones
             switch (opcion) {
                 case 1:
-                    mostrarInformacionDisparos(tableroJugador);
+                    // Muestra el tablero del jugador
+                    System.out.println("\nTu tablero:");
+                    jugadorTablero.mostrarTableroConDisparosJugador(); // Muestra el tablero con barcos y disparos
                     break;
                 case 2:
-                    mostrarTableroAtaque(pirata.getTablero());
+                    // Muestra el tablero de ataque del enemigo
+                    System.out.println("\nTablero de ataque:");
+                    pirataTablero.mostrarTableroDeAtaque(); // Muestra solo el tablero de ataques sin los barcos enemigos
                     break;
                 case 3:
-                    realizarDisparo(pirata.getTablero(), scanner);
-                    // Ataque del pirata
-                    pirata.disparar(tableroJugador);
-                    if (tableroJugador.comprobarDerrota()) {
-                        System.out.println("¡Has perdido! Todos tus barcos han sido hundidos.");
-                        juegoActivo = false;
+                    // Lógica para disparar
+                    System.out.println("\nIntroduce las coordenadas para disparar (fila y columna): ");
+                    int filaDisparo = pedirEntero(scanner, "Fila: ", 0, 4);
+                    int columnaDisparo = pedirEntero(scanner, "Columna: ", 0, 4);
+
+                    // Verificar el disparo y actualizar tableros
+                    boolean exito = pirataTablero.recibirDisparo(filaDisparo, columnaDisparo);
+                    rondas++; // Incrementar ronda cada vez que se dispara
+
+                    // Mensaje de éxito o fallo con el nombre del jugador
+                    if (exito) {
+                        System.out.println(nombreJugador + " ha acertado el disparo. ¡Impacto!");
+                    } else {
+                        System.out.println(nombreJugador + " ha fallado el disparo. Agua...");
                     }
-                    if (pirata.getTablero().comprobarDerrota()) {
-                        System.out.println("¡Has ganado! Todos los barcos enemigos han sido hundidos.");
-                        juegoActivo = false;
-                    }
-                    turno++;
+
+                    // El pirata dispara aleatoriamente
+                    System.out.println("\nEl Pirata está disparando aleatoriamente...");
+                    Pirata.disparar(jugadorTablero);  // Llama al método del pirata para disparar aleatoriamente
+                    break;
+
+                case 4:
+                    // Salir del juego
+                    System.out.println("¡Gracias por jugar, " + nombreJugador + "! Hasta la próxima.");
+                    jugando = false;
                     break;
                 default:
-                    System.out.println("Opción inválida. Intente nuevamente.");
+                    // Opción no válida
+                    System.out.println("Opción no válida. Por favor, elige una opción del menú.");
             }
         }
+        // Cierra el escáner al finalizar el juego
+        scanner.close();
     }
-
-    private static void mostrarInformacionDisparos(Tablero tableroJugador) {
-        System.out.println("Coordenadas de tus disparos fallidos:");
-        tableroJugador.mostrarDisparos(); // Método actualizado en la clase Tablero
-        System.out.println("Coordenadas de tus disparos acertados:");
-        tableroJugador.mostrarDisparos();
-        tableroJugador.mostrarTablero();
-    }
-
-    private static void mostrarTableroAtaque(Tablero tableroPirata) {
-        System.out.println("Tablero de ataque:");
-        // Lógica para mostrar el tablero de ataque con X, @ y ~
-        System.out.println("    0   1   2   3   4  ");
-        System.out.println("  +---+---+---+---+---+");
-        for (int i = 0; i < 5; i++) {
-            System.out.print(i + " |");
-            for (int j = 0; j < 5; j++) {
-                char c = tableroPirata.getEstadoCasilla(i, j);
-                System.out.print(" " + (c == 'X' ? 'X' : c == '@' ? '@' : c == 'A' ? '~' : ' ') + " |");
-            }
-            System.out.println();
-            System.out.println("  +---+---+---+---+---+");
-        }
-    }
-    //Metodo de ataque
-    private static void realizarDisparo(Tablero tableroEnemigo, Scanner scanner) {
-        try {
-            System.out.println("Introduce las coordenadas para atacar:");
-            System.out.print("Fila: ");
-            int filaAtaque = scanner.nextInt();
-            System.out.print("Columna: ");
-            int colAtaque = scanner.nextInt();
-            boolean exito = tableroEnemigo.atacar(filaAtaque, colAtaque);
-            if (exito) {
-                System.out.println("¡Acertaste!");
-            } else {
-                System.out.println("Fallaste.");
-            }
-        } catch (InputMismatchException e) {
-            System.out.println("Entrada no válida. Inténtalo de nuevo.");
-            scanner.next(); // Limpiar el escáner
-        }
-    }
-
-    // Método para leer opciones del usuario, manejando excepciones
-    private static int leerOpcion(Scanner scanner, int maxOpcion) {
-        int opcion = -1;
-        while (opcion < 1 || opcion > maxOpcion) {
+    // Método auxiliar para pedir un número entero con un rango específico y manejar excepciones
+    private int pedirEntero(Scanner scanner, String mensaje, int min, int max) {
+        int numero = -1;
+        boolean valido = false;
+        while (!valido) {
             try {
-                System.out.print("Elige una opción (1-" + maxOpcion + "): ");
-                opcion = scanner.nextInt();
-                if (opcion < 1 || opcion > maxOpcion) {
-                    System.out.println("Opción fuera de rango. Inténtalo de nuevo.");
+                System.out.print(mensaje);
+                numero = scanner.nextInt();
+                if (numero < min || numero > max) {
+                    throw new IllegalArgumentException("El número debe estar entre " + min + " y " + max + ".");
                 }
-            } catch (InputMismatchException e) {
-                System.out.println("Entrada no válida. Inténtalo de nuevo.");
-                scanner.next(); // Limpiar el escáner
+                valido = true;
+            } catch (InputMismatchException | IllegalArgumentException e) {
+                System.out.println("Entrada inválida. " + e.getMessage());
+                scanner.nextLine(); // Limpiar el buffer
             }
         }
-        return opcion;
+        return numero;
+    }
+    // Método auxiliar para pedir la dirección de un barco (horizontal o vertical)
+    private char pedirDireccion(Scanner scanner) {
+        char direccion = ' ';
+        boolean valido = false;
+        while (!valido) {
+            System.out.print("Introduce la dirección (H para horizontal, V para vertical): ");
+            String input = scanner.next().toUpperCase();
+            if (input.equals("H") || input.equals("V")) {
+                direccion = input.charAt(0);
+                valido = true;
+            } else {
+                System.out.println("Dirección inválida. Por favor, introduce 'H' o 'V'.");
+            }
+        }
+        return direccion;
+    }
+    // Método principal donde se inicializa y ejecuta el juego
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Introduce tu nombre: ");
+        String nombreJugador = scanner.nextLine(); // Solicita el nombre del jugador
+        mostrarTitulo(); // Muestra el título del juego
+        HundirLaFlota juego = new HundirLaFlota(nombreJugador); // Crea una instancia del juego
+        juego.iniciarJuego(); // Inicia el juego
+        scanner.close(); // Cierra el scanner al final
     }
 }
-
-/* package Hundir_La_Flota;
-
-import java.util.ArrayList;
-import java.util.InputMismatchException;
-import java.util.List;
-import java.util.Scanner;
-import Hundir_La_Flota.Barcos.TipoBarco;
-
-public class HundirLaFlota {
-    
-    // Método que muestra el título del juego
-    private static void mostrarTitulo() {
-        System.out.println("*******************************************");
-        System.out.println("*            Hundir La Flota              *");
-        System.out.println("*                                         *");
-        System.out.println("*             Diego y Lucia               *");
-        System.out.println("*******************************************\n");
-        System.out.println("───║─▄──▄──▄──▄──║────\r\n" 
-                + "───║─▓──▓──▓──▓──║────\r\n"
-                + "───░░░░░░░░░░░░░─║────\r\n"
-                + "▀███████████████████──\r\n"
-                + "░██████████████████▀░░");
-    }
-
-    // Main del juego 
-    public static void main(String[] args) {  
-        // Inicializar el título, el tablero del jugador y el pirata con su propio tablero.
-        mostrarTitulo();
-        Scanner scanner = new Scanner(System.in);
-        Tablero tableroJugador = new Tablero();
-        Jugador jugador = new Jugador("Jugador", tableroJugador);
-        Pirata pirata = new Pirata(new Tablero());
-
-        // Menú para introducir barcos
-        introducirBarcosMenu(jugador.getTablero(), scanner);
-
-        // Iniciar la partida
-        iniciarPartida(jugador, pirata, scanner);
-
-        scanner.close();
-    }
-
-    private static void introducirBarcosMenu(Tablero tablero, Scanner scanner) {
-        List<TipoBarco> barcosDisponibles = new ArrayList<>();
-        for (TipoBarco tipo : TipoBarco.values()) {
-            barcosDisponibles.add(tipo);
-        }
-
-        boolean todosBarcosColocados = false;
-
-        while (!todosBarcosColocados) {
-            System.out.println("\nMenú de Introducción de Barcos:");
-            System.out.println("1. Introducir un barco");
-            System.out.println("2. Ver tablero con los barcos colocados");
-
-            int opcion = leerOpcion(scanner, 2);
-            switch (opcion) {
-                case 1:
-                    introducirBarco(tablero, scanner, barcosDisponibles);
-                    if (barcosDisponibles.isEmpty()) {
-                        todosBarcosColocados = true;
-                    }
-                    break;
-                case 2:
-                    tablero.mostrarTablero();
-                    break;
-                default:
-                    System.out.println("Opción inválida. Intente nuevamente.");
-            }
-        }
-    }
-
-    private static void introducirBarco(Tablero tablero, Scanner scanner, List<TipoBarco> barcosDisponibles) {
-        if (barcosDisponibles.isEmpty()) {
-            System.out.println("¡Ya has colocado todos los barcos!");
-            return;
-        }
-
-        System.out.println("Selecciona el tipo de barco para introducir:");
-        for (int i = 0; i < barcosDisponibles.size(); i++) {
-            System.out.println((i + 1) + ". " + barcosDisponibles.get(i).name());
-        }
-
-        int seleccion = leerOpcion(scanner, barcosDisponibles.size());
-        TipoBarco tipoSeleccionado = barcosDisponibles.get(seleccion - 1);
-
-        boolean colocado = false;
-        while (!colocado) {
-            try {
-                System.out.println("Introduce los datos para colocar un " + tipoSeleccionado.name() + " de tamaño " + tipoSeleccionado.getTamanio() + ":");
-                System.out.print("Fila inicial: ");
-                int filaInicial = scanner.nextInt();
-                System.out.print("Columna inicial: ");
-                int colInicial = scanner.nextInt();
-                System.out.print("Dirección (H para horizontal, V para vertical): ");
-                char direccion = Character.toUpperCase(scanner.next().charAt(0));
-                Barcos barco = new Barcos(tipoSeleccionado);
-                if (tablero.colocarBarco(barco, filaInicial, colInicial, direccion)) {
-                    System.out.println(tipoSeleccionado.name() + " colocado correctamente.");
-                    barcosDisponibles.remove(tipoSeleccionado); // Elimina el barco colocado de la lista
-                    colocado = true;
-                } else {
-                    System.out.println("Error al colocar el " + tipoSeleccionado.name() + ". Selecciona otra ubicación.");
-                    return; // Volver al menú principal si no se puede colocar el barco
-                }
-            } catch (InputMismatchException e) {
-                System.out.println("Entrada no válida. Inténtalo de nuevo.");
-                scanner.next(); // Limpiar el escáner
-                return; // Volver al menú principal en caso de entrada no válida
-            }
-        }
-    }
-
-    private static void iniciarPartida(Jugador jugador, Pirata pirata, Scanner scanner) {
-        int turno = 1;
-        boolean juegoActivo = true;
-
-        while (juegoActivo) {
-            System.out.println("\nRonda: " + turno);
-            System.out.println("1. Ver mis disparos y mis barcos");
-            System.out.println("2. Ver tablero de ataque");
-            System.out.println("3. Realizar un disparo");
-
-            int opcion = leerOpcion(scanner, 3);
-            switch (opcion) {
-                case 1:
-                    mostrarInformacionDisparos(jugador.getTablero());
-                    break;
-                case 2:
-                    mostrarTableroAtaque(pirata.getTablero());
-                    break;
-                case 3:
-                    realizarDisparo(jugador, pirata.getTablero(), scanner);
-                    // Ataque del pirata
-                    pirata.disparar(jugador.getTablero());
-                    if (jugador.getTablero().comprobarDerrota()) {
-                        System.out.println("¡Has perdido! Todos tus barcos han sido hundidos.");
-                        juegoActivo = false;
-                    }
-                    if (pirata.getTablero().comprobarDerrota()) {
-                        System.out.println("¡Has ganado! Todos los barcos enemigos han sido hundidos.");
-                        juegoActivo = false;
-                    }
-                    turno++;
-                    break;
-                default:
-                    System.out.println("Opción inválida. Intente nuevamente.");
-            }
-        }
-    }
-
-    private static void mostrarInformacionDisparos(Tablero tableroJugador) {
-        System.out.println("Coordenadas de tus disparos fallidos:");
-        tableroJugador.mostrarDisparos(); // Método actualizado en la clase Tablero
-        System.out.println("Coordenadas de tus disparos acertados:");
-        tableroJugador.mostrarDisparos();
-        tableroJugador.mostrarTablero();
-    }
-
-    private static void mostrarTableroAtaque(Tablero tableroPirata) {
-        System.out.println("Tablero de ataque:");
-        // Lógica para mostrar el tablero de ataque con X, @ y ~
-        System.out.println("    0   1   2   3   4  ");
-        System.out.println("  +---+---+---+---+---+");
-        for (int i = 0; i < 5; i++) {
-            System.out.print(i + " |");
-            for (int j = 0; j < 5; j++) {
-                char c = tableroPirata.getEstadoCasilla(i, j);
-                System.out.print(" " + (c == 'X' ? 'X' : c == '@' ? '@' : c == 'A' ? '~' : ' ') + " |");
-            }
-            System.out.println();
-*/
-
-
-
-
-
-   

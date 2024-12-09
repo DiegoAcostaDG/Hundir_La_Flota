@@ -10,7 +10,6 @@ public class Tablero {
     public Tablero() {
         tablero = new char[TAMANIO_TABLERO][TAMANIO_TABLERO];
         disparosRealizados = new boolean[TAMANIO_TABLERO][TAMANIO_TABLERO];
-
         // Inicializamos el tablero con agua ('~')
         for (int i = 0; i < TAMANIO_TABLERO; i++) {
             for (int j = 0; j < TAMANIO_TABLERO; j++) {
@@ -19,8 +18,6 @@ public class Tablero {
             }
         }
     }
-
-    // -------------------------------------------------------------------
     // Método para mostrar el tablero del jugador
     public void mostrarTablero() {
         System.out.println("    0   1   2   3   4");
@@ -35,7 +32,6 @@ public class Tablero {
         }
     }
 
-    // -------------------------------------------------------------------
     // Método para obtener el estado de una casilla específica
     public char getEstadoCasilla(int fila, int columna) {
         // Verificamos que las coordenadas sean válidas
@@ -45,7 +41,6 @@ public class Tablero {
         return '~'; // Si las coordenadas están fuera del rango, devolvemos un valor por defecto (agua)
     }
 
-    // -------------------------------------------------------------------
     // Método para colocar un barco en el tablero
     public boolean colocarBarco(Barcos barco, int fila, int columna, char direccion) {
         int longitudBarco = barco.getTamanio(); // Longitud del barco
@@ -83,8 +78,6 @@ public class Tablero {
 
         return false;
     }
-
-    // -------------------------------------------------------------------
     // Método para realizar un disparo
     public boolean atacar(int fila, int columna) {
         if (fila < 0 || fila >= TAMANIO_TABLERO || columna < 0 || columna >= TAMANIO_TABLERO) {
@@ -110,21 +103,17 @@ public class Tablero {
             return false;
         }
     }
-
-    // -------------------------------------------------------------------
     // Método para verificar si el jugador ha ganado (si todos los barcos han sido hundidos)
-    public boolean comprobarDerrota() {
+    public boolean todosLosBarcosHundidos() {
         for (int i = 0; i < TAMANIO_TABLERO; i++) {
             for (int j = 0; j < TAMANIO_TABLERO; j++) {
                 if (tablero[i][j] == 'B') {
-                    return false; // Si aún hay un barco en el tablero, no ha sido derrotado
+                    return false;
                 }
             }
         }
-        return true; // Si no hay barcos en el tablero, el jugador ha ganado
+        return true;
     }
-
-    // -------------------------------------------------------------------
     // Método para mostrar los disparos realizados (con coordenadas)
     public void mostrarDisparos() {
         System.out.println("Disparos realizados:");
@@ -137,16 +126,13 @@ public class Tablero {
         }
         System.out.println();
     }
-
-    // -------------------------------------------------------------------
-    // Método para mostrar el tablero con los disparos y barcos
-    public void mostrarTableroConDisparos() {
+    public void mostrarTableroConDisparosJugador() {
         System.out.println("    0   1   2   3   4");
         System.out.println("  +---+---+---+---+---+");
         for (int i = 0; i < TAMANIO_TABLERO; i++) {
             System.out.print(i + " |");
             for (int j = 0; j < TAMANIO_TABLERO; j++) {
-                char c = tablero[i][j];
+                char c = tablero[i][j]; // '@' para barcos, '~' para agua
                 if (disparosRealizados[i][j]) {
                     System.out.print(" " + (c == '@' ? '@' : '~') + " |");
                 } else {
@@ -158,10 +144,51 @@ public class Tablero {
         }
     }
 
-    // -------------------------------------------------------------------
-    // Método para mostrar el estado del tablero actual
-    public void mostrarEstadoTablero() {
-        System.out.println("Estado actual del tablero:");
-        mostrarTableroConDisparos(); // Muestra el tablero con los disparos
+    public void mostrarTableroDeAtaque() {
+        System.out.println("    0   1   2   3   4");
+        System.out.println("  +---+---+---+---+---+");
+        for (int i = 0; i < TAMANIO_TABLERO; i++) {
+            System.out.print(i + " |");
+            for (int j = 0; j < TAMANIO_TABLERO; j++) {
+                if (disparosRealizados[i][j]) {
+                    char c = tablero[i][j]; // '@' para barcos enemigos
+                    System.out.print(" " + (c == '@' ? '@' : '~') + " |");
+                } else {
+                    System.out.print("   |"); // Casilla sin disparo
+                }
+            }
+            System.out.println();
+            System.out.println("  +---+---+---+---+---+");
+        }
     }
+    public boolean recibirDisparo(int fila, int columna) {
+        // Validar que las coordenadas estén dentro del tablero
+        if (fila < 0 || fila >= TAMANIO_TABLERO || columna < 0 || columna >= TAMANIO_TABLERO) {
+            System.out.println("Coordenadas fuera del rango. Intenta de nuevo.");
+            return false;
+        }
+
+        // Verificar si ya se disparó en esta posición
+        if (disparosRealizados[fila][columna]) {
+            System.out.println("Ya has disparado en esta posición. Intenta de nuevo.");
+            return false;
+        }
+
+        // Registrar el disparo
+        disparosRealizados[fila][columna] = true;
+
+        // Comprobar si hay un barco en la casilla
+        if (tablero[fila][columna] == '@') {
+            // Es un impacto
+            tablero[fila][columna] = 'X'; // Actualizar para marcar el impacto
+            System.out.println("¡Impacto en un barco enemigo!");
+            return true;
+        } else {
+            // Agua
+            tablero[fila][columna] = '~'; // Marcar como agua
+            System.out.println("Agua...");
+            return false;
+        }
+    }
+
 }

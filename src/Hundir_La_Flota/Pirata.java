@@ -13,8 +13,8 @@ public class Pirata {
     public Tablero getTablero() {
         return this.tablero;
     }
- // Método para disparar al tablero del enemigo
-    public static void disparar(Tablero tableroEnemigo) {
+	// Método para disparar al tablero del enemigo
+	public static void disparar(Tablero tableroEnemigo) {
         int filaAleatoria = (int) (Math.random() * 5);  // Genera una fila aleatoria entre 0 y 4
         int colAleatoria = (int) (Math.random() * 5);  // Genera una columna aleatoria entre 0 y 4
         System.out.println("Pirata disparando a (" + filaAleatoria + ", " + colAleatoria + ")...");
